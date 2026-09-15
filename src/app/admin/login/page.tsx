@@ -16,7 +16,7 @@ export default function AdminLoginPage() {
     }
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/admin` },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
     setMessage(error ? "We could not send a sign-in link. Please try again." : "Check your inbox for your secure sign-in link.");
   }
