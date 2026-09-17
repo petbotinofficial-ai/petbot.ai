@@ -5,7 +5,17 @@ import { useEffect, useRef, useState } from "react";
 
 const benefits = ["Made to feel personal", "Designed to be found", "Ready for every day"];
 
-export function CinematicHome() {
+type PublicProduct = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  price: number;
+  imageUrl: string;
+  imageAlt: string;
+};
+
+export function CinematicHome({ products }: { products: PublicProduct[] }) {
   const [tagSide, setTagSide] = useState<"front" | "back">("front");
   const heroRef = useRef<HTMLElement>(null);
   const tagRef = useRef<HTMLDivElement>(null);
@@ -76,11 +86,16 @@ export function CinematicHome() {
       </section>
 
       <section className="product-section" id="tag" aria-labelledby="tag-title">
-        <div className="product-intro"><p className="eyebrow">The Petbot tag</p><h2 id="tag-title">Beautifully personal.<br /><em>Quietly smart.</em></h2><p>A made-for-them keepsake in durable stainless steel, with a thoughtful connection on the reverse.</p><a className="button button-dark" href="#how-it-works">See how it works <span aria-hidden="true">→</span></a></div>
+        <div className="product-intro"><p className="eyebrow">The Petbot tag</p><h2 id="tag-title">Beautifully personal.<br /><em>Quietly smart.</em></h2><p>A made-for-them keepsake in durable stainless steel, with a thoughtful connection on the reverse.</p><a className="button button-dark" href="#shop">Choose their tag <span aria-hidden="true">→</span></a></div>
         <div className="tag-stage">
           <div ref={tagRef} className={`tag-card ${tagSide === "back" ? "is-back" : ""}`}><Image src={tagSide === "front" ? "/media/petbot-tag-front.png" : "/media/petbot-tag-back.png"} alt={tagSide === "front" ? "Personalised Petbot tag front" : "Petbot tag reverse with QR code"} fill sizes="(max-width: 900px) 90vw, 52vw" className="tag-image" /></div>
           <div className="tag-controls" role="group" aria-label="View tag side"><button type="button" onClick={() => setTagSide("front")} aria-pressed={tagSide === "front"}>Front</button><button type="button" onClick={() => setTagSide("back")} aria-pressed={tagSide === "back"}>Reverse / QR</button></div><p className="drag-note">Tap to turn the tag</p>
         </div>
+      </section>
+
+      <section className="shop-section" id="shop" aria-labelledby="shop-title">
+        <div className="shop-heading"><p className="eyebrow">Made for their story</p><h2 id="shop-title">Choose a tag.</h2><p>Every Petbot tag is made to carry a little more than a name.</p></div>
+        {products.length ? <div className="shop-grid">{products.map((product) => <article className="shop-card" key={product.id}><div className="shop-image">{product.imageUrl ? <img src={product.imageUrl} alt={product.imageAlt} /> : <Image src="/media/petbot-tag-front.png" alt="Personalised Petbot tag" fill sizes="(max-width: 720px) 90vw, 32vw" />}</div><div className="shop-card-copy"><div><h3>{product.name}</h3><p>{product.description || "Personalised with purpose, designed for everyday adventures."}</p></div><div className="product-price">₹{product.price.toFixed(2)}</div></div><a className="button button-dark" href={`#contact-${product.slug}`}>Choose this tag <span aria-hidden="true">↗</span></a></article>)}</div> : <div className="shop-empty"><p>Our first Petbot tags are being prepared.</p><span>Check back soon for something thoughtfully made.</span></div>}
       </section>
 
       <section className="how-section" id="how-it-works" aria-labelledby="how-title">
@@ -88,7 +103,7 @@ export function CinematicHome() {
         <div className="how-content"><p className="eyebrow">One thoughtful connection</p><h2 id="how-title">One scan,<br /><em>one way home.</em></h2><p>The QR code links to a profile made for the moment a kind stranger wants to help. No app, no guesswork—just a gentler way to reconnect.</p><ul>{benefits.map((benefit) => <li key={benefit}><span aria-hidden="true">✦</span>{benefit}</li>)}</ul></div>
       </section>
 
-      <section className="closing-section" aria-labelledby="closing-title"><Image src="/media/petbot-closing-pets.png" alt="A dog and cat resting together at sunrise" fill sizes="100vw" className="closing-image" /><div className="closing-wash" aria-hidden="true" /><div className="closing-content"><p className="eyebrow light">Petbot</p><h2 id="closing-title">For every curious<br /><em>little explorer.</em></h2><a className="button button-light" href="#tag">Choose their tag <span aria-hidden="true">↗</span></a></div></section>
+      <section className="closing-section" aria-labelledby="closing-title"><Image src="/media/petbot-closing-pets.png" alt="A dog and cat resting together at sunrise" fill sizes="100vw" className="closing-image" /><div className="closing-wash" aria-hidden="true" /><div className="closing-content"><p className="eyebrow light">Petbot</p><h2 id="closing-title">For every curious<br /><em>little explorer.</em></h2><a className="button button-light" href="#shop">Choose their tag <span aria-hidden="true">↗</span></a></div></section>
       <footer className="site-footer"><span>© {new Date().getFullYear()} Petbot</span><span>Made with care for every journey.</span></footer>
     </main>
   );
