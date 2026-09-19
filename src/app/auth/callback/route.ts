@@ -2,7 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
-  const destination = new URL("/admin", request.url);
+  const next = request.nextUrl.searchParams.get("next");
+  const destination = new URL(next === "/admin/set-password" ? next : "/admin", request.url);
   const login = new URL("/admin/login", request.url);
   const code = request.nextUrl.searchParams.get("code");
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

@@ -17,6 +17,7 @@ type PublicProduct = {
 
 export function CinematicHome({ products }: { products: PublicProduct[] }) {
   const [tagSide, setTagSide] = useState<"front" | "back">("front");
+  const firstProductUrl = "/shop";
   const heroRef = useRef<HTMLElement>(null);
   const tagRef = useRef<HTMLDivElement>(null);
 
@@ -61,8 +62,8 @@ export function CinematicHome({ products }: { products: PublicProduct[] }) {
     <main className="petbot-page">
       <header className="site-header">
         <a className="wordmark" href="#top" aria-label="Petbot home"><span className="wordmark-mark" aria-hidden="true">✦</span>petbot</a>
-        <nav aria-label="Primary navigation"><a href="#story">Our story</a><a href="#tag">The tag</a><a href="#how-it-works">How it works</a></nav>
-        <a className="header-cta" href="#tag">Explore tags <span aria-hidden="true">↗</span></a>
+        <nav aria-label="Primary navigation"><a href="#story">Our story</a><a href="#tag">The tag</a><a href="#how-it-works">How it works</a><a className="nav-buy" href={firstProductUrl}>Buy now</a></nav>
+        <a className="header-cta" href={firstProductUrl}>Buy now <span aria-hidden="true">↗</span></a>
       </header>
 
       <section className="hero" id="top" aria-labelledby="hero-title" ref={heroRef}>
@@ -75,7 +76,7 @@ export function CinematicHome({ products }: { products: PublicProduct[] }) {
           <p className="eyebrow light"><span>New</span> A kinder way home</p>
           <h1 id="hero-title">More than a tag.<br /><em>A way back home.</em></h1>
           <p className="hero-copy">Thoughtfully made pet identity, designed to keep your favourite companion close—even when they wander.</p>
-          <div className="hero-actions"><a className="button button-light" href="#tag">Meet the tag <span aria-hidden="true">↘</span></a><a className="text-link light" href="#story">Watch the story <span aria-hidden="true">↓</span></a></div>
+          <div className="hero-actions"><a className="button button-light" href={firstProductUrl}>Buy now <span aria-hidden="true">→</span></a><a className="text-link light" href="#story">Watch the story <span aria-hidden="true">↓</span></a></div>
         </div>
         <a className="scroll-cue" href="#story"><span /> Scroll to explore</a>
       </section>
@@ -95,11 +96,11 @@ export function CinematicHome({ products }: { products: PublicProduct[] }) {
 
       <section className="shop-section" id="shop" aria-labelledby="shop-title">
         <div className="shop-heading"><p className="eyebrow">Made for their story</p><h2 id="shop-title">Choose a tag.</h2><p>Every Petbot tag is made to carry a little more than a name.</p></div>
-        {products.length ? <div className="shop-grid">{products.map((product) => <article className="shop-card" key={product.id}><div className="shop-image">{product.imageUrl ? <img src={product.imageUrl} alt={product.imageAlt} /> : <Image src="/media/petbot-tag-front.png" alt="Personalised Petbot tag" fill sizes="(max-width: 720px) 90vw, 32vw" />}</div><div className="shop-card-copy"><div><h3>{product.name}</h3><p>{product.description || "Personalised with purpose, designed for everyday adventures."}</p></div><div className="product-price">₹{product.price.toFixed(2)}</div></div><a className="button button-dark" href={`#contact-${product.slug}`}>Choose this tag <span aria-hidden="true">↗</span></a></article>)}</div> : <div className="shop-empty"><p>Our first Petbot tags are being prepared.</p><span>Check back soon for something thoughtfully made.</span></div>}
+        {products.length ? <div className="shop-grid">{products.map((product) => <article className="shop-card" key={product.id}><a className="shop-image" href={`/shop/${product.slug}`}>{product.imageUrl ? <img src={product.imageUrl} alt={product.imageAlt} /> : <Image src="/media/petbot-tag-front.png" alt="Personalised Petbot tag" fill sizes="(max-width: 720px) 90vw, 32vw" />}</a><div className="shop-card-copy"><div><h3>{product.name}</h3><p>{product.description || "Personalised with purpose, designed for everyday adventures."}</p></div><div className="product-price">₹{product.price.toFixed(2)}</div></div><a className="button button-dark" href={`/shop/${product.slug}`}>Buy now <span aria-hidden="true">→</span></a></article>)}</div> : <div className="shop-empty"><p>Our first Petbot tags are being prepared.</p><span>Check back soon for something thoughtfully made.</span></div>}
       </section>
 
       <section className="how-section" id="how-it-works" aria-labelledby="how-title">
-        <div className="how-visual" aria-hidden="true"><span className="orbit orbit-one" /><span className="orbit orbit-two" /><span className="scan-pulse">✦</span></div>
+        <div className="how-visual"><span className="orbit orbit-one" aria-hidden="true" /><span className="orbit orbit-two" aria-hidden="true" /><Image src="/media/petbot-upi-qr.jpeg" alt="Example Petbot QR code" width={260} height={260} className="scan-qr" /></div>
         <div className="how-content"><p className="eyebrow">One thoughtful connection</p><h2 id="how-title">One scan,<br /><em>one way home.</em></h2><p>The QR code links to a profile made for the moment a kind stranger wants to help. No app, no guesswork—just a gentler way to reconnect.</p><ul>{benefits.map((benefit) => <li key={benefit}><span aria-hidden="true">✦</span>{benefit}</li>)}</ul></div>
       </section>
 
