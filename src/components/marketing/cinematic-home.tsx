@@ -70,7 +70,7 @@ export function CinematicHome({ products }: { products: PublicProduct[] }) {
 
       <section className="hero" id="top" aria-labelledby="hero-title" ref={heroRef}>
         <div className="hero-media" aria-hidden="true">
-          <video autoPlay muted loop playsInline preload="metadata"><source src="/media/petbot-hero-loop.mp4" type="video/mp4" /></video>
+          <video autoPlay muted loop playsInline preload="auto"><source src="/media/petbot-hero-loop.mp4" type="video/mp4" /></video>
         </div>
         <div className="hero-wash" aria-hidden="true" />
         <div className="hero-content">
