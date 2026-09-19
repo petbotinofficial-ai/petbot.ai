@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { ProfileQr } from "@/components/profile/profile-qr";
 
 const benefits = ["Made to feel personal", "Designed to be found", "Ready for every day"];
 
@@ -68,8 +70,7 @@ export function CinematicHome({ products }: { products: PublicProduct[] }) {
 
       <section className="hero" id="top" aria-labelledby="hero-title" ref={heroRef}>
         <div className="hero-media" aria-hidden="true">
-          <Image src="/media/petbot-cinematic-world.png" alt="" fill priority sizes="100vw" className="hero-poster" />
-          <video autoPlay muted loop playsInline poster="/media/petbot-cinematic-world.png"><source src="/media/petbot-hero-loop.mp4" type="video/mp4" /></video>
+          <video autoPlay muted loop playsInline preload="metadata"><source src="/media/petbot-hero-loop.mp4" type="video/mp4" /></video>
         </div>
         <div className="hero-wash" aria-hidden="true" />
         <div className="hero-content">
@@ -100,8 +101,8 @@ export function CinematicHome({ products }: { products: PublicProduct[] }) {
       </section>
 
       <section className="how-section" id="how-it-works" aria-labelledby="how-title">
-        <div className="how-visual"><span className="orbit orbit-one" aria-hidden="true" /><span className="orbit orbit-two" aria-hidden="true" /><Image src="/media/petbot-upi-qr.jpeg" alt="Example Petbot QR code" width={260} height={260} className="scan-qr" /></div>
-        <div className="how-content"><p className="eyebrow">One thoughtful connection</p><h2 id="how-title">One scan,<br /><em>one way home.</em></h2><p>The QR code links to a profile made for the moment a kind stranger wants to help. No app, no guesswork—just a gentler way to reconnect.</p><ul>{benefits.map((benefit) => <li key={benefit}><span aria-hidden="true">✦</span>{benefit}</li>)}</ul></div>
+        <div className="how-visual"><span className="orbit orbit-one" aria-hidden="true" /><span className="orbit orbit-two" aria-hidden="true" /><ProfileQr profileId="sample-tommy" label="Scan to meet Tommy" /></div>
+        <div className="how-content"><p className="eyebrow">One thoughtful connection</p><h2 id="how-title">One scan,<br /><em>one way home.</em></h2><p>This is a real profile QR. Scan it to see the safe, finder-friendly profile that lives behind every Petbot tag.</p><Link href="/p/sample-tommy" className="button button-light">Try the sample profile <span aria-hidden="true">↗</span></Link><ul>{benefits.map((benefit) => <li key={benefit}><span aria-hidden="true">✦</span>{benefit}</li>)}</ul></div>
       </section>
 
       <section className="closing-section" aria-labelledby="closing-title"><Image src="/media/petbot-closing-pets.png" alt="A dog and cat resting together at sunrise" fill sizes="100vw" className="closing-image" /><div className="closing-wash" aria-hidden="true" /><div className="closing-content"><p className="eyebrow light">Petbot</p><h2 id="closing-title">For every curious<br /><em>little explorer.</em></h2><a className="button button-light" href="#shop">Choose their tag <span aria-hidden="true">↗</span></a></div></section>
