@@ -5,61 +5,27 @@ import { useRouter } from "next/navigation";
 import { ChangeEvent, useState } from "react";
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+type Product = { id: string; name: string; slug: string; description: string; price: number; inventory: number; published: boolean; imageUrl: string; imagePath: string | null };
 
-export function ProductManager() {
+export function ProductManager({ products }: { products: Product[] }) {
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [imagePreview, setImagePreview] = useState("");
-
-  function previewImage(event: ChangeEvent<HTMLInputElement>) {
-    const image = event.target.files?.[0];
-    if (!image) return setImagePreview("");
-    setImagePreview(URL.createObjectURL(image));
-  }
-
-  async function createProduct(formData: FormData) {
-    const supabase = createClient();
-    if (!supabase) return setMessage("Supabase is not configured.");
-    const name = String(formData.get("name") ?? "").trim();
-    const slug = String(formData.get("slug") ?? "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    const priceRupees = Number(formData.get("price"));
+  const [editing, setEditing] = useState<Product | null>(null);
+  function previewImage(event: ChangeEvent<HTMLInputElement>) { const image = event.target.files?.[0]; setImagePreview(image ? URL.createObjectURL(image) : ""); }
+  async function saveProduct(formData: FormData) {
+    const supabase = createClient(); if (!supabase) return setMessage("Supabase is not configured.");
+    const name = String(formData.get("name") ?? "").trim(); const slug = String(formData.get("slug") ?? "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); const priceRupees = Number(formData.get("price")); const image = formData.get("image");
     if (name.length < 2 || !slug || !Number.isFinite(priceRupees) || priceRupees < 0) return setMessage("Add a product name, a valid slug, and a valid price.");
-    const image = formData.get("image");
-    if (image instanceof File && image.size > MAX_IMAGE_BYTES) return setMessage("Choose an image smaller than 8 MB.");
-    if (image instanceof File && image.size && !image.type.startsWith("image/")) return setMessage("Choose an image file (JPG, PNG, or WebP).");
-    setSaving(true);
-    const { data: product, error } = await supabase.from("products").insert({
-      name,
-      slug,
-      description: String(formData.get("description") ?? "").trim(),
-      price_paise: Math.round(priceRupees * 100),
-      inventory_quantity: Number(formData.get("inventory")) || 0,
-      is_published: formData.get("is_published") === "on",
-    }).select("id").single();
-    if (error) return setMessage("We could not save that product. Check the slug is unique and try again.");
-
-    if (image instanceof File && image.size && product) {
-      const extension = image.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "image";
-      const storagePath = `${product.id}/${crypto.randomUUID()}.${extension}`;
-      const { error: uploadError } = await supabase.storage.from("product-media").upload(storagePath, image, { contentType: image.type, upsert: false });
-      if (uploadError) {
-        setSaving(false);
-        return setMessage("Product saved, but the image upload failed. Please try the image again shortly.");
-      }
-      const { error: mediaError } = await supabase.from("product_media").insert({ product_id: product.id, storage_path: storagePath, alt_text: name, position: 0 });
-      if (mediaError) {
-        await supabase.storage.from("product-media").remove([storagePath]);
-        setSaving(false);
-        return setMessage("Product saved, but its image could not be attached. Please try again shortly.");
-      }
-    }
-
-    setSaving(false);
-    setImagePreview("");
-    setMessage(image instanceof File && image.size ? "Product and image saved." : "Product saved. You can add its main image next time from this form.");
-    router.refresh();
+    if (image instanceof File && (image.size > MAX_IMAGE_BYTES || (image.size && !image.type.startsWith("image/")))) return setMessage("Choose a JPG, PNG, or WebP image smaller than 8 MB.");
+    const details = { name, slug, description: String(formData.get("description") ?? "").trim(), price_paise: Math.round(priceRupees * 100), inventory_quantity: Number(formData.get("inventory")) || 0, is_published: formData.get("is_published") === "on" };
+    setSaving(true); const { data: saved, error } = editing ? await supabase.from("products").update(details).eq("id", editing.id).select("id").single() : await supabase.from("products").insert(details).select("id").single();
+    if (error || !saved) { setSaving(false); return setMessage("We could not save that product. Check the slug is unique and try again."); }
+    if (image instanceof File && image.size) { const extension = image.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "image"; const storagePath = `${saved.id}/${crypto.randomUUID()}.${extension}`; const { error: uploadError } = await supabase.storage.from("product-media").upload(storagePath, image, { contentType: image.type, upsert: false }); if (uploadError) { setSaving(false); return setMessage("Product saved, but the image upload failed."); } if (editing?.imagePath) { const { error: replaceError } = await supabase.from("product_media").update({ storage_path: storagePath, alt_text: name }).eq("product_id", saved.id).eq("storage_path", editing.imagePath); if (!replaceError) await supabase.storage.from("product-media").remove([editing.imagePath]); } else { const { error: mediaError } = await supabase.from("product_media").insert({ product_id: saved.id, storage_path: storagePath, alt_text: name, position: 0 }); if (mediaError) { await supabase.storage.from("product-media").remove([storagePath]); setSaving(false); return setMessage("Product saved, but its image could not be attached."); } } }
+    setSaving(false); setImagePreview(""); setEditing(null); setMessage(editing ? "Product updated." : "Product saved."); router.refresh();
   }
-
-  return <form action={createProduct} className="product-form"><div className="form-heading"><div><p className="eyebrow">Catalogue</p><h2>Add a product</h2></div><button disabled={saving}>{saving ? "Saving…" : "Save product"}</button></div><div className="form-grid"><label>Product name<input name="name" required placeholder="Personalized Bone Tag" /></label><label>URL slug<input name="slug" required placeholder="personalized-bone-tag" pattern="[a-z0-9-]+" /></label><label>Price (₹)<input name="price" required type="number" min="0" step="0.01" placeholder="449" /></label><label>Inventory<input name="inventory" type="number" min="0" defaultValue="0" /></label></div><label>Description<textarea name="description" rows={4} placeholder="A short, customer-facing description." /></label><div className="image-upload"><label htmlFor="image">Main product image<input id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp" onChange={previewImage} /></label><p>JPG, PNG, or WebP · maximum 8 MB</p>{imagePreview && <img alt="Selected product preview" className="image-preview" src={imagePreview} />}</div><label className="checkbox"><input name="is_published" type="checkbox" /> Publish immediately</label>{message && <p className="form-message" role="status">{message}</p>}</form>;
+  async function deleteProduct(product: Product) { if (!window.confirm(`Delete ${product.name}? This permanently removes it from the shop and deletes its product image.`)) return; const response = await fetch("/api/admin/delete-product", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ productId: product.id }) }); const result = await response.json().catch(() => ({})); setMessage(response.ok ? "Product deleted." : result.error || "Could not delete that product."); if (response.ok) router.refresh(); }
+  const active = editing;
+  return <><form action={saveProduct} className="product-form" key={active?.id || "new"}><div className="form-heading"><div><p className="eyebrow">Catalogue</p><h2>{active ? "Edit product" : "Add a product"}</h2></div><div className="form-actions">{active && <button type="button" className="button-link" onClick={() => { setEditing(null); setImagePreview(""); }}>Cancel</button>}<button disabled={saving}>{saving ? "Saving…" : active ? "Save changes" : "Save product"}</button></div></div><div className="form-grid"><label>Product name<input name="name" required defaultValue={active?.name} placeholder="Personalized Bone Tag" /></label><label>URL slug<input name="slug" required defaultValue={active?.slug} placeholder="personalized-bone-tag" pattern="[a-z0-9-]+" /></label><label>Price (₹)<input name="price" required type="number" min="0" step="0.01" defaultValue={active?.price} placeholder="449" /></label><label>Inventory<input name="inventory" type="number" min="0" defaultValue={active?.inventory ?? "0"} /></label></div><label>Description<textarea name="description" rows={4} defaultValue={active?.description} placeholder="A short, customer-facing description." /></label><div className="image-upload"><label htmlFor="image">{active ? "Replace main product image" : "Main product image"}<input id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp" onChange={previewImage} /></label><p>JPG, PNG, or WebP · maximum 8 MB</p>{imagePreview ? <img alt="Selected product preview" className="image-preview" src={imagePreview} /> : active?.imageUrl && <img alt={`${active.name} current image`} className="image-preview" src={active.imageUrl} />}</div><label className="checkbox"><input name="is_published" type="checkbox" defaultChecked={active?.published} /> Publish immediately</label>{message && <p className="form-message" role="status">{message}</p>}</form><div className="product-list"><div className="form-heading"><div><p className="eyebrow">Live catalogue</p><h2>Products</h2></div><span>{products.length} total</span></div>{products.length ? <div className="product-table">{products.map((product) => <article key={product.id}>{product.imageUrl ? <img src={product.imageUrl} alt={product.name} className="product-thumbnail" /> : <div className="product-thumbnail placeholder">No image</div>}<div><strong>{product.name}</strong><span>/{product.slug}</span></div><span>₹{product.price.toFixed(2)}</span><span>{product.inventory} in stock</span><span className={product.published ? "status-live" : "status-draft"}>{product.published ? "Live" : "Draft"}</span><div className="product-row-actions"><button type="button" onClick={() => { setEditing(product); setMessage(""); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Edit</button><button type="button" className="danger-button" onClick={() => deleteProduct(product)}>Delete</button></div></article>)}</div> : <div className="empty-state">Your catalogue is empty. Add your first personalised tag above.</div>}</div></>;
 }
