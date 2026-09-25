@@ -106,7 +106,6 @@ export function CinematicHome({ products }: { products: PublicProduct[] }) {
       </section>
 
       <section className="closing-section" aria-labelledby="closing-title"><Image src="/media/petbot-closing-pets.png" alt="A dog and cat resting together at sunrise" fill sizes="100vw" className="closing-image" /><div className="closing-wash" aria-hidden="true" /><div className="closing-content"><p className="eyebrow light">Petbot</p><h2 id="closing-title">For every curious<br /><em>little explorer.</em></h2><a className="button button-light" href="#shop">Choose their tag <span aria-hidden="true">↗</span></a></div></section>
-      <footer className="site-footer"><span>© {new Date().getFullYear()} Petbot</span><nav aria-label="Footer"><Link href="/contact">Contact us</Link><Link href="/return-policy">Return policy</Link><Link href="/payment-policy">Payment policy</Link></nav><span>Made with care for every journey.</span></footer>
     </main>
   );
 }
