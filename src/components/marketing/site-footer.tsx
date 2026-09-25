@@ -47,9 +47,7 @@ export function SiteFooter() {
       </div>
       <div className="site-footer-bottom">
         <span>© {year} {LEGAL_CONFIG.businessName}. All Rights Reserved.</span>
-        <span className="footer-disclaimer">
-          Legal entity: {LEGAL_CONFIG.legalEntityName}. Business details on this site are placeholders pending confirmation and must be updated before launch.
-        </span>
+        <span className="footer-disclaimer">{LEGAL_CONFIG.businessName} is an {LEGAL_CONFIG.businessStructure}.</span>
       </div>
     </footer>
   );

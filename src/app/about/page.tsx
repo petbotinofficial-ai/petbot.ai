@@ -31,7 +31,7 @@ export default function AboutPage() {
           </p>
         </div>
         <p className="info-copy">
-          Petbot is operated by {LEGAL_CONFIG.legalEntityName}. Have a question about a tag, an order, or how the
+          Petbot is currently an {LEGAL_CONFIG.businessStructure}. Have a question about a tag, an order, or how the
           QR profile works? <Link href="/contact">Get in touch</Link> — we&rsquo;d love to help.
         </p>
       </section>

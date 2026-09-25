@@ -4,7 +4,7 @@ import { FooterGate } from "@/components/marketing/footer-gate";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://petbot.ai"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://petbot.in"),
   title: { default: "Petbot | Smart QR Pet Tags", template: "%s | Petbot" },
   description: "Thoughtfully made pet identity, designed to help every companion find their way home.",
   openGraph: {

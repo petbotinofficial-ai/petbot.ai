@@ -16,6 +16,6 @@ const STATIC_ROUTES = [
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://petbot.ai";
+  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://petbot.in";
   return STATIC_ROUTES.map((path) => ({ url: `${base}${path}`, lastModified: new Date() }));
 }

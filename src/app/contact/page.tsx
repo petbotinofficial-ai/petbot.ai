@@ -25,10 +25,9 @@ export default function ContactPage() {
         </div>
         <div className="policy-card">
           <h2>Reach us directly.</h2>
-          <p>Support email: <a href={`mailto:${LEGAL_CONFIG.supportEmail}`}>{LEGAL_CONFIG.supportEmail}</a></p>
-          <p>Support phone: {LEGAL_CONFIG.supportPhone}</p>
+          <p>Support email: <a href={`mailto:${LEGAL_CONFIG.supportEmail}`}>{LEGAL_CONFIG.supportEmail}</a> (no phone support at this time)</p>
           <p>Support hours: {LEGAL_CONFIG.supportHours}</p>
-          <p>Business address: {LEGAL_CONFIG.registeredAddress}</p>
+          <p>Address: {LEGAL_CONFIG.registeredAddress}</p>
         </div>
         <div className="policy-card">
           <h2>Send us a message.</h2>

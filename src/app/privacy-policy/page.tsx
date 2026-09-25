@@ -17,36 +17,35 @@ const sections = [
     body: `- Full name
 - Email address
 - Mobile number
-- Billing address
-- Shipping address
-- Order and payment status information (we do not store your card, CVV, UPI PIN, or net banking credentials — these are handled directly by our payment processor)`,
+- Shipping/delivery address
+- Order status information (we do not store your UPI PIN, net banking credentials, or other sensitive payment credentials)`,
   },
   {
     heading: "3. Information We Collect — About Your Pet",
     body: `- Pet name
 - Pet photo, if you choose to upload one
-- Pet type / breed
-- Age, if provided
-- Any other information you voluntarily provide for personalisation or the QR profile`,
+- Breed, if provided
+- Any other note you voluntarily provide for personalisation or the QR profile`,
   },
   {
     heading: "4. Information Collected for the QR Pet Profile",
-    body: `- Pet profile information you choose to publish (name, photo, message)
-- Owner contact information you choose to display to finders
-- Emergency contact information, if you provide it
+    body: `- Pet profile information you choose to publish (name, breed, a message for finders)
+- Whether your pet is shown as friendly or careful-around-strangers
+- Your phone number, so a finder can contact you (shown on the public profile)
+- Your address, only if you choose to make it visible on the profile
 - Any other information you voluntarily choose to publish on the profile`,
   },
   {
     heading: "5. Location-Sharing Feature",
-    body: "If a finder scans your pet's QR code and the location-sharing workflow is enabled, the finder may be asked to voluntarily share their approximate device location. If shared, this location information is used solely to help notify you (the registered pet owner) — for example, by sending you a map link — so you can locate your pet. We do not use finder location data for any other purpose, do not sell it, and do not display it publicly. Location sharing depends on the finder's own consent and device permissions.",
+    body: "Your pet's public profile includes a \"Share my location\" option a finder can choose to use. If a finder taps this and their browser grants location access, their approximate device location (via their browser's own geolocation, not IP-based or GPS-precision tracking) is used once, immediately, to generate a Google Maps link that is emailed to you, the registered owner — it is not stored in our database. This only happens when a finder actively chooses to share their location and their browser permits it; it does not happen automatically just from the QR code being scanned or the profile being viewed. If the finder declines, their device doesn't support it, or the request times out, no location email is sent for that visit and there is currently no fallback location method. To limit misuse, repeated location-sharing requests for the same pet are limited to a small number within a short time window.",
   },
   {
     heading: "6. Cookies and Similar Technologies",
-    body: "This website may use cookies or similar technologies required for core functionality (such as keeping you signed in to an account or admin session) and, where configured, basic website analytics (see \"Analytics\" below). We do not use cookies for third-party advertising targeting.",
+    body: "This website uses cookies required for core functionality — specifically, to keep an admin signed in to the dashboard. We do not use cookies for advertising or cross-site tracking.",
   },
   {
     heading: "7. Analytics",
-    body: "We may use privacy-respecting analytics tools (such as Google Analytics, where configured) to understand overall website traffic and usage patterns. Analytics data is generally aggregated and is used to improve our website and products, not to identify you individually.",
+    body: "Petbot does not currently have any third-party analytics or advertising tracking (such as Google Analytics or a Meta Pixel) installed on this website.",
   },
   {
     heading: "8. Website Logs, IP Address, and Device Information",
@@ -54,7 +53,7 @@ const sections = [
   },
   {
     heading: "9. Payment Processing",
-    body: "Payments are processed through Razorpay, an authorised third-party payment gateway. Razorpay processes your payment details directly under its own security and compliance standards. Petbot never receives or stores your full card number, CVV, UPI PIN, or net banking credentials.",
+    body: "Petbot currently accepts payment via UPI, which you complete directly in your own UPI app; we then verify your payment manually before confirming your order. Petbot never receives or stores your UPI PIN or net banking credentials. If Petbot moves to an automated payment gateway such as Razorpay in the future, this section will be updated, and that gateway would process your payment details under its own security and compliance standards.",
   },
   {
     heading: "10. Email Service Providers",
@@ -82,11 +81,11 @@ const sections = [
   },
   {
     heading: "16. Your Rights",
-    body: "Subject to applicable law, you may request access to, correction of, or deletion of your personal information, or ask us to restrict certain uses of it. You may also withdraw consent for optional features such as the public QR profile at any time.",
+    body: "Subject to applicable law, you may request access to, correction of, or deletion of your personal information. Pet profiles cannot currently be edited by customers after creation — if you need a correction or have a serious issue with your profile, please contact us and we will assist directly.",
   },
   {
     heading: "17. Data Deletion Requests",
-    body: `To request deletion of your personal data or your pet's profile information, please contact us at ${LEGAL_CONFIG.supportEmail} with your order number and registered email or phone number so we can verify your request.`,
+    body: `To request deletion of your personal data or your pet's public profile, email ${LEGAL_CONFIG.supportEmail} with your order number and the registered email or phone number used at checkout so we can verify your request.`,
   },
   {
     heading: "18. Data Correction",
@@ -106,7 +105,7 @@ const sections = [
   },
   {
     heading: "22. Grievance / Contact Process",
-    body: "If you have a grievance regarding how your personal data has been handled, please see our Grievance Redressal page for our Grievance Officer's contact details and our complaint-resolution process.",
+    body: "If you have a grievance regarding how your personal data has been handled, please see our Grievance Redressal page for our grievance contact details and our complaint-resolution process.",
   },
 ];
 

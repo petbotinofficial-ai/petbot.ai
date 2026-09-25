@@ -14,7 +14,7 @@ const sections = [
   },
   {
     heading: "2. About Petbot",
-    body: `Petbot designs and sells personalised, custom engraved QR pet tags and related pet-identity products in India. The operating legal entity is ${LEGAL_CONFIG.legalEntityName}, registered at ${LEGAL_CONFIG.registeredAddress}. This legal entity information is a placeholder and must be confirmed and updated before these Terms are relied upon.`,
+    body: `Petbot designs and sells personalised, custom engraved QR pet tags and related pet-identity products in India. Petbot is currently an ${LEGAL_CONFIG.businessStructure}, operating from ${LEGAL_CONFIG.registeredAddress}.`,
   },
   {
     heading: "3. Eligibility",
@@ -57,8 +57,8 @@ const sections = [
     body: "Petbot accepts prepaid orders only. Full payment must be made at the time of checkout before production of your personalised product begins.",
   },
   {
-    heading: "13. Razorpay / Payment Processing",
-    body: "Payments on this website are processed through Razorpay, a third-party licensed payment gateway, or such other authorised payment processor as Petbot may use from time to time. Petbot does not collect, view, or store your card numbers, CVV, UPI PIN, net banking credentials, or other sensitive payment credentials — these are handled directly and securely by the payment processor in accordance with applicable regulations.",
+    heading: "13. Payment Processing",
+    body: "Petbot currently accepts payment via UPI, verified manually before your order is confirmed. Petbot does not collect, view, or store your UPI PIN, net banking credentials, or other sensitive payment credentials. If Petbot enables an automated payment gateway such as Razorpay in the future, this section will be updated accordingly, and any such gateway will process payments under its own security and compliance standards.",
   },
   {
     heading: "14. Shipping and Delivery",
@@ -66,11 +66,11 @@ const sections = [
   },
   {
     heading: "15. Cancellation",
-    body: "Cancellation eligibility depends on the stage your order has reached (before personalisation begins, after personalisation has begun, or after dispatch). Full details are set out in our Refund & Cancellation Policy.",
+    body: "Because every Petbot tag is personalised and production begins as soon as your order is placed, orders cannot be cancelled once placed, for any reason. Please review your details carefully before completing checkout.",
   },
   {
     heading: "16. Returns",
-    body: "Because Petbot products are personalised, returns are handled differently from standard retail products. Please refer to our Refund & Cancellation Policy for the specific circumstances in which a return, replacement, or refund may be available.",
+    body: "Petbot does not accept returns or replacements. Refunds are available only in the limited circumstances set out in our Refund & Cancellation Policy — namely a damaged/broken product or a Petbot-side QR/profile link failure.",
   },
   {
     heading: "17. Refunds",
@@ -106,7 +106,7 @@ const sections = [
   },
   {
     heading: "25. Third-Party Services",
-    body: "This website relies on third-party service providers for functions such as payment processing (Razorpay), hosting, database services, analytics, and transactional email delivery. Petbot is not responsible for outages, errors, or issues arising from the systems of these independent third parties, though we will make reasonable efforts to assist you if such an issue affects your order.",
+    body: "This website relies on third-party service providers for functions such as hosting, database services, analytics, and transactional email delivery. Petbot is not responsible for outages, errors, or issues arising from the systems of these independent third parties, though we will make reasonable efforts to assist you if such an issue affects your order.",
   },
   {
     heading: "26. Website Availability",
@@ -134,11 +134,11 @@ const sections = [
   },
   {
     heading: "32. Contact Information",
-    body: `For any questions about these Terms, please contact us at ${LEGAL_CONFIG.supportEmail}${LEGAL_CONFIG.supportPhone.startsWith("[") ? "" : ` or ${LEGAL_CONFIG.supportPhone}`}.`,
+    body: `For any questions about these Terms, please contact us at ${LEGAL_CONFIG.supportEmail} (${LEGAL_CONFIG.supportHours}). We do not currently offer phone support.`,
   },
   {
     heading: "33. Grievance Redressal",
-    body: "If you have a complaint or grievance regarding your order or this website, please see our dedicated Grievance Redressal page, which sets out our Grievance Officer's contact details and our complaint-handling process.",
+    body: "If you have a complaint or grievance regarding your order or this website, please see our dedicated Grievance Redressal page, which sets out our grievance contact details and our complaint-handling process.",
   },
 ];
 
