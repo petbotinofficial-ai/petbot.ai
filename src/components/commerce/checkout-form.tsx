@@ -2,18 +2,98 @@
 
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 type CheckoutProduct = { id: string; name: string; slug: string; description: string; price: number; imageUrl: string; imageAlt: string };
 type CheckoutResult = { orderId: string; orderNumber: string };
 
+declare global {
+  interface Window {
+    Razorpay: new (options: Record<string, unknown>) => { open: () => void; on: (event: string, handler: (response: unknown) => void) => void };
+  }
+}
+
+const RAZORPAY_SCRIPT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
+
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true);
+    const existing = document.querySelector(`script[src="${RAZORPAY_SCRIPT_SRC}"]`);
+    if (existing) {
+      existing.addEventListener("load", () => resolve(true));
+      existing.addEventListener("error", () => resolve(false));
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = RAZORPAY_SCRIPT_SRC;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
 export function CheckoutForm({ product }: { product: CheckoutProduct }) {
+  const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [order, setOrder] = useState<CheckoutResult | null>(null);
-  const [paymentMessage, setPaymentMessage] = useState("");
-  const [paymentOpen, setPaymentOpen] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [payError, setPayError] = useState("");
+
+  async function startPayment(result: CheckoutResult) {
+    setPayError("");
+    const response = await fetch("/api/razorpay/create-order", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ orderId: result.orderId }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      setPayError(data.error || "We could not start payment. Please try again.");
+      return;
+    }
+
+    const scriptLoaded = await loadRazorpayScript();
+    if (!scriptLoaded || !window.Razorpay) {
+      setPayError("Could not load the payment window. Please check your connection and try again.");
+      return;
+    }
+
+    const razorpay = new window.Razorpay({
+      key: data.keyId,
+      amount: data.amount,
+      currency: data.currency,
+      order_id: data.razorpayOrderId,
+      name: "Petbot",
+      description: product.name,
+      prefill: { name: data.customerName, email: data.customerEmail, contact: data.customerPhone },
+      notes: { order_number: data.orderNumber },
+      theme: { color: "#2e2119" },
+      handler: async (rawResponse: unknown) => {
+        const paymentResponse = rawResponse as { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string };
+        const verify = await fetch("/api/razorpay/verify-payment", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ orderId: result.orderId, ...paymentResponse }),
+        });
+        if (verify.ok) {
+          router.push(`/order-success?order=${encodeURIComponent(result.orderNumber)}`);
+        } else {
+          router.push(`/order-failed?order=${encodeURIComponent(result.orderNumber)}`);
+        }
+      },
+      modal: {
+        ondismiss: () => {
+          router.push(`/order-cancelled?order=${encodeURIComponent(result.orderNumber)}`);
+        },
+      },
+    });
+    razorpay.on("payment.failed", () => {
+      router.push(`/order-failed?order=${encodeURIComponent(result.orderNumber)}`);
+    });
+    razorpay.open();
+  }
 
   async function placeOrder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -45,20 +125,58 @@ export function CheckoutForm({ product }: { product: CheckoutProduct }) {
       const { error: uploadError } = await supabase.storage.from("pet-media").upload(path, photo, { contentType: photo.type, upsert: false });
       if (!uploadError) await supabase.rpc("attach_petbot_photo", { p_order_id: result.orderId, p_photo_path: path });
     }
-    setSaving(false); setOrder(result);
+    setOrder(result);
+    await startPayment(result);
+    setSaving(false);
   }
 
-  async function markPaymentCompleted() {
-    const supabase = createClient();
-    if (!supabase || !order) return;
-    const { data, error } = await supabase.rpc("confirm_petbot_payment", { p_order_id: order.orderId });
-    if (error || !data?.[0]) return setPaymentMessage("Payment review is not configured yet. Petbot needs to run the payment-review migration in Supabase before this button can notify the team.");
-    const email = await fetch("/api/payment-completed", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ orderNumber: data[0].order_number, customerName: data[0].customer_name, customerEmail: data[0].customer_email, amount: data[0].total_paise / 100 }) });
-    setPaymentMessage(email.ok ? "We'll verify your payment within 5–10 minutes. If it is successful, we'll email you to confirm that your order has been placed." : "Payment completion was saved. Petbot will review it in the dashboard shortly.");
+  if (order) {
+    return (
+      <main className="checkout-page">
+        <section className="checkout-success">
+          <p className="eyebrow">Order created</p>
+          <h1>Almost there.</h1>
+          <p>Your order <strong>{order.orderNumber}</strong> is reserved. If the payment window didn&rsquo;t open, tap below to try again.</p>
+          <button type="button" onClick={() => startPayment(order)} className="button button-dark payment-complete">Pay now →</button>
+          {payError && <p className="form-message form-error" role="alert">{payError}</p>}
+          <Link href="/" className="text-link">← Return to Petbot</Link>
+        </section>
+      </main>
+    );
   }
 
-  const upiUrl = `upi://pay?pa=petbot%40ptyes&pn=Petbot&am=${product.price.toFixed(2)}&cu=INR`;
-  if (order) return <main className="checkout-page"><section className="checkout-success"><p className="eyebrow">Order created</p><h1>Thank you.</h1><p>Your order <strong>{order.orderNumber}</strong> is reserved. When you are ready, tap below to open the secure UPI payment step.</p>{!paymentOpen ? <button type="button" onClick={() => setPaymentOpen(true)} className="button button-dark payment-complete">Pay via UPI →</button> : <><div className="upi-panel"><img src="/media/petbot-upi-qr.jpeg" alt="Payment QR code" /><div><p className="eyebrow">Payment QR</p><strong>₹{product.price.toFixed(2)}</strong><span>Scan with any UPI app to make payment.</span><a className="button button-dark" href={upiUrl}>Open UPI app ↗</a></div></div><button type="button" onClick={markPaymentCompleted} className="button button-dark payment-complete">I&rsquo;ve completed payment</button>{paymentMessage && <p className="payment-message" role="status">{paymentMessage}</p>}</>}<Link href="/" className="text-link">← Return to Petbot</Link></section></main>;
-
-  return <main className="checkout-page"><header className="checkout-header"><Link href="/">← Petbot</Link><span>Secure checkout</span></header><section className="checkout-layout"><div className="checkout-product">{product.imageUrl && <img src={product.imageUrl} alt={product.imageAlt} />}<p className="eyebrow">Your chosen tag</p><h1>{product.name}</h1><p>{product.description}</p><strong>₹{product.price.toFixed(2)}</strong></div><form className="checkout-form" onSubmit={placeOrder}><div><p className="eyebrow">Personalisation</p><h2>Tell us about them.</h2></div><div className="form-grid"><label>Pet name<input name="pet_name" required placeholder="Tommy" /></label><label>Breed <input name="breed" placeholder="Golden Retriever" /></label></div><label>A note for the tag / profile<textarea name="message" rows={3} placeholder="Friendly, loves treats…" /></label><label>Pet photo <input name="pet_photo" type="file" accept="image/jpeg,image/png,image/webp" /><small>Optional · JPG, PNG, or WebP · up to 8 MB. Your photo stays private and is visible only to Petbot.</small></label><div><p className="eyebrow">Your details</p><h2>Where should it go?</h2></div><div className="form-grid"><label>Your name<input name="customer_name" required autoComplete="name" /></label><label>Email<input name="customer_email" type="email" required autoComplete="email" /></label><label>Phone<input name="customer_phone" type="tel" required autoComplete="tel" /></label><label>PIN code<input name="pincode" inputMode="numeric" required autoComplete="postal-code" /></label></div><label>Address<input name="line1" required autoComplete="street-address" /></label><div className="form-grid"><label>City<input name="city" required autoComplete="address-level2" /></label><label>State<input name="state" required autoComplete="address-level1" /></label></div><div className="checkout-total"><span>Total</span><strong>₹{product.price.toFixed(2)}</strong></div><p className="form-message" style={{ marginTop: "-0.5rem" }}>Free shipping across India · Online payment only, no COD · Orders cannot be cancelled once placed.</p><label className="checkout-policy-line"><input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} /><span>I agree to the <Link href="/terms-and-conditions" target="_blank">Terms &amp; Conditions</Link>, <Link href="/privacy-policy" target="_blank">Privacy Policy</Link>, <Link href="/shipping-policy" target="_blank">Shipping Policy</Link>, and <Link href="/refund-and-cancellation" target="_blank">Refund &amp; Cancellation Policy</Link>, including that orders cannot be cancelled once placed.</span></label><button disabled={saving || !agreed} className="button button-dark checkout-submit">{saving ? "Creating your order…" : "Continue to UPI payment →"}</button>{message && <p className="form-message" role="status">{message}</p>}</form></section></main>;
+  return (
+    <main className="checkout-page">
+      <header className="checkout-header"><Link href="/">← Petbot</Link><span>Secure checkout</span></header>
+      <section className="checkout-layout">
+        <div className="checkout-product">
+          {product.imageUrl && <img src={product.imageUrl} alt={product.imageAlt} />}
+          <p className="eyebrow">Your chosen tag</p>
+          <h1>{product.name}</h1>
+          <p>{product.description}</p>
+          <strong>₹{product.price.toFixed(2)}</strong>
+        </div>
+        <form className="checkout-form" onSubmit={placeOrder}>
+          <div><p className="eyebrow">Personalisation</p><h2>Tell us about them.</h2></div>
+          <div className="form-grid"><label>Pet name<input name="pet_name" required placeholder="Tommy" /></label><label>Breed <input name="breed" placeholder="Golden Retriever" /></label></div>
+          <label>A note for the tag / profile<textarea name="message" rows={3} placeholder="Friendly, loves treats…" /></label>
+          <label>Pet photo <input name="pet_photo" type="file" accept="image/jpeg,image/png,image/webp" /><small>Optional · JPG, PNG, or WebP · up to 8 MB. Your photo stays private and is visible only to Petbot.</small></label>
+          <div><p className="eyebrow">Your details</p><h2>Where should it go?</h2></div>
+          <div className="form-grid"><label>Your name<input name="customer_name" required autoComplete="name" /></label><label>Email<input name="customer_email" type="email" required autoComplete="email" /></label><label>Phone<input name="customer_phone" type="tel" required autoComplete="tel" /></label><label>PIN code<input name="pincode" inputMode="numeric" required autoComplete="postal-code" /></label></div>
+          <label>Address<input name="line1" required autoComplete="street-address" /></label>
+          <div className="form-grid"><label>City<input name="city" required autoComplete="address-level2" /></label><label>State<input name="state" required autoComplete="address-level1" /></label></div>
+          <div className="checkout-total"><span>Total</span><strong>₹{product.price.toFixed(2)}</strong></div>
+          <p className="form-message" style={{ marginTop: "-0.5rem" }}>Free shipping across India · Online payment only, no COD · Orders cannot be cancelled once placed.</p>
+          <label className="checkout-policy-line">
+            <input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} />
+            <span>
+              I agree to the <Link href="/terms-and-conditions" target="_blank">Terms &amp; Conditions</Link>, <Link href="/privacy-policy" target="_blank">Privacy Policy</Link>, <Link href="/shipping-policy" target="_blank">Shipping Policy</Link>, and <Link href="/refund-and-cancellation" target="_blank">Refund &amp; Cancellation Policy</Link>, including that orders cannot be cancelled once placed.
+            </span>
+          </label>
+          <button disabled={saving || !agreed} className="button button-dark checkout-submit">{saving ? "Processing…" : "Continue to payment →"}</button>
+          {message && <p className="form-message" role="status">{message}</p>}
+        </form>
+      </section>
+    </main>
+  );
 }
