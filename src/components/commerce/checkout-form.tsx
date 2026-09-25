@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 type CheckoutProduct = { id: string; name: string; slug: string; description: string; price: number; imageUrl: string; imageAlt: string };
 type CheckoutResult = { orderId: string; orderNumber: string };
@@ -40,6 +40,10 @@ export function CheckoutForm({ product }: { product: CheckoutProduct }) {
   const [order, setOrder] = useState<CheckoutResult | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [payError, setPayError] = useState("");
+
+  useEffect(() => {
+    if (order) window.scrollTo({ top: 0 });
+  }, [order]);
 
   async function startPayment(result: CheckoutResult) {
     setPayError("");
