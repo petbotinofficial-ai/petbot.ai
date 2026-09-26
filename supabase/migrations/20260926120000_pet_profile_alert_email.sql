@@ -128,7 +128,7 @@ begin
          coalesce(nullif(trim(profile.alert_email), ''), customer_order.customer_email)
     into matched_profile_id, matched_pet_name, matched_owner_email
   from public.pet_profiles as profile
-  join public.orders as customer_order on customer_order.id = profile.order_id
+  left join public.orders as customer_order on customer_order.id = profile.order_id
   where profile.public_id = lower(trim(p_public_id))
     and profile.is_public = true;
 
@@ -136,7 +136,9 @@ begin
     raise exception 'Profile unavailable';
   end if;
 
-  if matched_owner_email !~* '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$' then
+  if matched_owner_email is null
+    or trim(matched_owner_email) = ''
+    or trim(matched_owner_email) !~* '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$' then
     raise exception 'Owner notification unavailable';
   end if;
 
