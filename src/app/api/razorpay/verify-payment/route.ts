@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyRazorpayPaymentSignature } from "@/lib/razorpay";
+import { attemptMetaPurchaseCapiDelivery } from "@/lib/meta-capi";
 
 type VerifyPayload = {
   orderId?: string;
@@ -32,33 +33,42 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Order/payment mismatch." }, { status: 400 });
   }
 
-  const isValid = verifyRazorpayPaymentSignature({
-    orderId: razorpay_order_id,
-    paymentId: razorpay_payment_id,
-    signature: razorpay_signature,
-  });
-  if (!isValid) {
-    await admin
+  // Idempotent: if the webhook already verified this payment first, skip re-verification and
+  // fall through to the CAPI attempt below — Purchase delivery must not depend on which of the
+  // two server-side routes got here first.
+  if (payment.status !== "verified") {
+    const isValid = verifyRazorpayPaymentSignature({
+      orderId: razorpay_order_id,
+      paymentId: razorpay_payment_id,
+      signature: razorpay_signature,
+    });
+    if (!isValid) {
+      await admin
+        .from("payments")
+        .update({ status: "rejected", failure_reason: "Signature verification failed" })
+        .eq("order_id", orderId)
+        .eq("status", "pending");
+      return NextResponse.json({ error: "Payment verification failed." }, { status: 400 });
+    }
+
+    const { data: updatedPayment, error: paymentError } = await admin
       .from("payments")
-      .update({ status: "rejected", failure_reason: "Signature verification failed" })
+      .update({ status: "verified", razorpay_payment_id, razorpay_signature, reviewed_at: new Date().toISOString() })
       .eq("order_id", orderId)
-      .eq("status", "pending");
-    return NextResponse.json({ error: "Payment verification failed." }, { status: 400 });
+      .eq("status", "pending")
+      .select("id");
+    if (paymentError) return NextResponse.json({ error: "Could not record payment." }, { status: 500 });
+    // No row matched status = 'pending' — e.g. it was already 'rejected' by a prior failed
+    // attempt for this order. Never mark the order verified in that case: a valid signature on
+    // a payment id doesn't retroactively make an already-rejected payment a successful one.
+    if (!updatedPayment || updatedPayment.length === 0) {
+      return NextResponse.json({ error: "Payment could not be verified." }, { status: 400 });
+    }
+
+    await admin.from("orders").update({ status: "payment_verified" }).eq("id", orderId);
   }
 
-  // Idempotent: if the webhook already verified this payment first, do nothing further.
-  if (payment.status === "verified") {
-    return NextResponse.json({ ok: true, alreadyVerified: true });
-  }
-
-  const { error: paymentError } = await admin
-    .from("payments")
-    .update({ status: "verified", razorpay_payment_id, razorpay_signature, reviewed_at: new Date().toISOString() })
-    .eq("order_id", orderId)
-    .eq("status", "pending");
-  if (paymentError) return NextResponse.json({ error: "Could not record payment." }, { status: 500 });
-
-  await admin.from("orders").update({ status: "payment_verified" }).eq("id", orderId);
+  await attemptMetaPurchaseCapiDelivery(admin, orderId);
 
   return NextResponse.json({ ok: true });
 }

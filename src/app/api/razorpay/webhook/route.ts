@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyRazorpayWebhookSignature } from "@/lib/razorpay";
+import { attemptMetaPurchaseCapiDelivery } from "@/lib/meta-capi";
 
 type RazorpayWebhookEvent = {
   event: string;
@@ -41,26 +42,33 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
   if (!payment) return NextResponse.json({ ok: true, ignored: true });
 
-  // Idempotency: a payment already in a terminal state is never re-processed, so duplicate
-  // webhook deliveries (Razorpay retries on any non-2xx, or genuine duplicate sends) are safe.
-  if (payment.status === "verified" || payment.status === "rejected") {
-    return NextResponse.json({ ok: true, alreadyProcessed: true });
+  // Idempotency: a payment already in a terminal state has its status transition skipped on
+  // duplicate webhook deliveries (Razorpay retries on any non-2xx, or genuine duplicate sends).
+  // CAPI delivery is intentionally NOT short-circuited here — attemptMetaPurchaseCapiDelivery is
+  // its own idempotent, bounded-retry claim, so a webhook retry that arrives after a transient
+  // CAPI failure is exactly how that failure gets a further attempt.
+  const alreadyProcessed = payment.status === "verified" || payment.status === "rejected";
+
+  if (!alreadyProcessed) {
+    if (event.event === "payment.captured") {
+      await admin
+        .from("payments")
+        .update({ status: "verified", razorpay_payment_id: paymentEntity.id, reviewed_at: new Date().toISOString() })
+        .eq("id", payment.id)
+        .eq("status", "pending");
+      await admin.from("orders").update({ status: "payment_verified" }).eq("id", payment.order_id).eq("status", "payment_pending");
+    } else if (event.event === "payment.failed") {
+      await admin
+        .from("payments")
+        .update({ status: "rejected", failure_reason: paymentEntity.error_description || "Payment failed" })
+        .eq("id", payment.id)
+        .eq("status", "pending");
+      await admin.from("orders").update({ status: "payment_failed" }).eq("id", payment.order_id).eq("status", "payment_pending");
+    }
   }
 
   if (event.event === "payment.captured") {
-    await admin
-      .from("payments")
-      .update({ status: "verified", razorpay_payment_id: paymentEntity.id, reviewed_at: new Date().toISOString() })
-      .eq("id", payment.id)
-      .eq("status", "pending");
-    await admin.from("orders").update({ status: "payment_verified" }).eq("id", payment.order_id).eq("status", "payment_pending");
-  } else if (event.event === "payment.failed") {
-    await admin
-      .from("payments")
-      .update({ status: "rejected", failure_reason: paymentEntity.error_description || "Payment failed" })
-      .eq("id", payment.id)
-      .eq("status", "pending");
-    await admin.from("orders").update({ status: "payment_failed" }).eq("id", payment.order_id).eq("status", "payment_pending");
+    await attemptMetaPurchaseCapiDelivery(admin, payment.order_id);
   }
 
   return NextResponse.json({ ok: true });

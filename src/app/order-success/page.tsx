@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { LEGAL_CONFIG } from "@/lib/legal-config";
+import { PurchaseTracker } from "@/components/commerce/purchase-tracker";
 
 export const metadata = { title: "Order Confirmed", robots: { index: false } };
 
 export default async function OrderSuccessPage({ searchParams }: PageProps<"/order-success">) {
   const params = await searchParams;
   const orderNumber = typeof params.order === "string" ? params.order : "";
+  const trackingToken = typeof params.t === "string" ? params.t : "";
 
   return (
     <main className="order-status-page">
+      {orderNumber && trackingToken && <PurchaseTracker orderNumber={orderNumber} trackingToken={trackingToken} />}
       <div className="order-status-card">
         <p className="eyebrow">Payment successful</p>
         <h1>Order confirmed.</h1>
