@@ -4,9 +4,22 @@ import { getMetaContentId } from "./meta-content-ids";
 
 export { getMetaContentId };
 
+// window.fbq is defined synchronously by the inline base-Pixel snippet in src/app/layout.tsx
+// (the snippet assigns a queueing shim to window.fbq before fbevents.js itself finishes
+// loading), so by the time any component below can call this, it should already exist. If it
+// doesn't — e.g. an ad blocker stripped the base snippet, or this ever runs before the root
+// layout mounts — fail silently in production (never crash the page over analytics) but warn
+// loudly in development so a missing/broken Pixel install is caught immediately instead of
+// silently dropping events.
 function fbq(...args: unknown[]) {
   const win = window as unknown as { fbq?: (...fbqArgs: unknown[]) => void };
-  win.fbq?.(...args);
+  if (typeof win.fbq !== "function") {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[meta-pixel] window.fbq is not available; dropping event:", args);
+    }
+    return;
+  }
+  win.fbq(...args);
 }
 
 export function trackViewContent(productSlug: string, value: number) {
